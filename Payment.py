@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
-
+impor
 
 class PaymentWindow(QWidget):
     def __init__(self, total_cost):
