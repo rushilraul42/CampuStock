@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QMessageBox
 
 # Function to calculate total cost
 def calculate_total_cost(price_per_week, num_weeks):
@@ -50,8 +50,15 @@ class RentList(QWidget):
         calculate_button = QPushButton("Calculate Total", self)
         calculate_button.clicked.connect(self.calculate_total)
 
+        self.proceed_to_pay_button = QPushButton("Proceed to Pay", self)
+        self.proceed_to_pay_button.clicked.connect(self.proceed_to_pay)
+
         self.layout.addWidget(self.table)
         self.layout.addWidget(calculate_button)
+        self.layout.addWidget(self.proceed_to_pay_button)
+
+        self.total_cost_label = QLabel("Total Cost: $0.00", self)
+        self.layout.addWidget(self.total_cost_label)
 
         self.setLayout(self.layout)
 
@@ -60,11 +67,26 @@ class RentList(QWidget):
         self.show()
 
     def calculate_total(self):
+        total_cost = 0
         for row in range(self.table.rowCount()):
             price_per_week = float(self.table.item(row, 1).text().replace("$", ""))
-            num_weeks = float(self.table.cellWidget(row, 2).text())
-            total_cost = calculate_total_cost(price_per_week, num_weeks)
-            self.table.item(row, 3).setText("${:.2f}".format(total_cost))
+            num_weeks_text = self.table.cellWidget(row, 2).text()
+            try:
+                num_weeks = float(num_weeks_text)
+                if num_weeks < 0:
+                    raise ValueError("Number of weeks cannot be negative")
+                total = calculate_total_cost(price_per_week, num_weeks)
+                total_cost += total
+                self.table.item(row, 3).setText("${:.2f}".format(total))
+            except ValueError as e:
+                QMessageBox.warning(self, "Error", str(e))
+                return
+        self.total_cost_label.setText(f"Total Cost: ${total_cost:.2f}")
+
+    def proceed_to_pay(self):
+        total_cost = float(self.total_cost_label.text().replace("Total Cost: $", ""))
+        with open("Payment.py", "w") as f:
+            f.write(f"Total Cost: ${total_cost:.2f}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

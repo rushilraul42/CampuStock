@@ -1,5 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout
+from Payment import PaymentWindow  # Import PaymentWindow from Payment.py
 
 # Function to calculate total cost
 def calculate_total_cost(price, quantity):
@@ -47,6 +48,8 @@ class ItemListApp(QWidget):
             quantity = QLineEdit(self)
             total_cost = QTableWidgetItem("")
 
+            quantity.textChanged.connect(self.calculate_total)  # Connect textChanged signal to calculate_total method
+
             self.table.setItem(row_position, 0, item_name)
             self.table.setItem(row_position, 1, price)
             self.table.setCellWidget(row_position, 2, quantity)
@@ -55,8 +58,15 @@ class ItemListApp(QWidget):
         calculate_button = QPushButton("Calculate Total", self)
         calculate_button.clicked.connect(self.calculate_total)
 
+        self.proceed_to_pay_button = QPushButton("Proceed to Pay", self)
+        self.proceed_to_pay_button.clicked.connect(self.proceed_to_pay)
+
         self.layout.addWidget(self.table)
         self.layout.addWidget(calculate_button)
+        self.layout.addWidget(self.proceed_to_pay_button)
+
+        self.total_cost_label = QLabel("Total Cost: $0.00", self)  # Initialize label with initial total cost
+        self.layout.addWidget(self.total_cost_label)
 
         self.setLayout(self.layout)
 
@@ -65,11 +75,28 @@ class ItemListApp(QWidget):
         self.show()
 
     def calculate_total(self):
+        total_cost = 0
         for row in range(self.table.rowCount()):
-            price = float(self.table.item(row, 1).text().replace("$", ""))
-            quantity = float(self.table.cellWidget(row, 2).text())
-            total_cost = calculate_total_cost(price, quantity)
-            self.table.item(row, 3).setText("${:.2f}".format(total_cost))
+            price_text = self.table.item(row, 1).text().replace("$", "")
+            quantity_text = self.table.cellWidget(row, 2).text()
+
+            try:
+                price = float(price_text)
+                quantity = int(quantity_text)  # Convert quantity to an integer
+                total = calculate_total_cost(price, quantity)
+                total_cost += total
+                self.table.item(row, 3).setText("${:.2f}".format(total))
+            except ValueError:
+                # Handle the case where quantity is not a valid integer
+                pass
+
+        self.total_cost_label.setText(f"Total Cost: ${total_cost:.2f}")  # Update the total cost label
+
+    def proceed_to_pay(self):
+        total_cost = float(self.total_cost_label.text().replace("Total Cost: $", ""))
+        payment_window = PaymentWindow(total_cost)
+        payment_window.show()  # Show payment window
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
